@@ -1,49 +1,68 @@
 package com.Challenge.ForoHub.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
 import java.util.List;
 
 @Entity
-public class Usuario {
+@Table(name = "usuarios")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nombre;
+
+    @Column(unique = true, nullable = false)
     private String correoElectronico;
-    @JsonIgnore
+
+    @Column(nullable = false)
     private String contrasena;
 
-    @ManyToMany
-    @JsonIgnore
-    private List<Perfil> perfiles;
+    private String login;
 
-    public Usuario() {}
 
-    public Usuario(Long id, String nombre, String correoElectronico, String contrasena, List<Perfil> perfiles) {
-        this.id = id;
-        this.nombre = nombre;
-        this.correoElectronico = correoElectronico;
-        this.contrasena = contrasena;
-        this.perfiles = perfiles;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @Override
+    public String getPassword() {
+        return contrasena;
+    }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    @Override
+    public String getUsername() {
+        // Usamos el correo electrónico como login
+        return correoElectronico;
+    }
 
-    public String getCorreoElectronico() { return correoElectronico; }
-    public void setCorreoElectronico(String correoElectronico) { this.correoElectronico = correoElectronico; }
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
-    public String getContrasena() { return contrasena; }
-    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
-    public List<Perfil> getPerfiles() { return perfiles; }
-    public void setPerfiles(List<Perfil> perfiles) { this.perfiles = perfiles; }
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
 
 }

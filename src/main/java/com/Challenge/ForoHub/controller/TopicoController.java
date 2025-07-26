@@ -4,7 +4,6 @@ import com.Challenge.ForoHub.DTO.*;
 import com.Challenge.ForoHub.Repositorio.CursoRepository;
 import com.Challenge.ForoHub.Repositorio.TopicoRepository;
 import com.Challenge.ForoHub.Repositorio.UsuarioRepository;
-import com.Challenge.ForoHub.Topico.DatosRegistroTopico;
 import com.Challenge.ForoHub.infra.exception.AutorNoEncontrado;
 import com.Challenge.ForoHub.infra.exception.CursoNoEncontrado;
 import com.Challenge.ForoHub.infra.exception.TopicoNoEncontrado;
@@ -12,7 +11,6 @@ import com.Challenge.ForoHub.model.Curso;
 import com.Challenge.ForoHub.model.Topico;
 import com.Challenge.ForoHub.model.Usuario;
 import com.Challenge.ForoHub.service.TopicoService;
-import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -67,10 +64,9 @@ public class TopicoController {
 
 
     }
-    @Transactional
     @GetMapping
     public Page<listaTopicos> listar(@PageableDefault(size=10, sort = {"fechaCreacion"}) Pageable paginacion){
-        return topicoService.listarTopicosActivos(paginacion);
+        return topicoService.listarTopicos(paginacion);
     }
     @GetMapping("/{id}")
     public ResponseEntity<DetallarTopico> obtenerTopicoPorId(@PathVariable Long id) {
@@ -127,7 +123,8 @@ public class TopicoController {
 
     }
 
-    @DeleteMapping("/topicos/{id}")
+    @Transactional
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarTopico(@PathVariable Long id) {
         Optional<Topico> topicoOptional = topicoRepository.findById(id);
 
@@ -135,6 +132,7 @@ public class TopicoController {
             topicoRepository.deleteById(id);
             return ResponseEntity.noContent().build(); // 204 No Content
         }
+        System.out.println("Eliminando tópico con id " + id);
 
         return ResponseEntity.notFound().build(); // 404 Not Found
     }

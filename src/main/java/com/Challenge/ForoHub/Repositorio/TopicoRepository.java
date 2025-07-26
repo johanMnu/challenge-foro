@@ -9,5 +9,5 @@ import java.util.Optional;
 
 public interface TopicoRepository extends JpaRepository<Topico,Long> {
 
-    Page<Topico> findByActivoTrue(Pageable pageable);
+    Page<Topico> findAll(Pageable pageable);
 }

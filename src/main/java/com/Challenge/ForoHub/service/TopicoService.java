@@ -13,8 +13,8 @@ public class TopicoService {
     @Autowired
     private TopicoRepository topicoRepository;
 
-    public Page<listaTopicos> listarTopicosActivos(Pageable paginacion) {
-        return topicoRepository.findByActivoTrue(paginacion)
+    public Page<listaTopicos> listarTopicos (Pageable paginacion) {
+        return topicoRepository.findAll(paginacion)
                 .map(this::mapearADTO);
     }
 

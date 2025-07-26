@@ -17,7 +17,6 @@ public class Topico {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Boolean activo;
     private String titulo;
     private String mensaje;
     private LocalDateTime fechaCreacion;
@@ -39,10 +38,6 @@ public class Topico {
         this.status = "ABIERTO";
         this.autor = autor;
         this.curso = curso;
-        this.activo = true;
-    }
-    public void setActivo(boolean activo) {
-        this.activo = activo;
     }
     @Override
     public String toString() {
@@ -53,7 +48,5 @@ public class Topico {
                 ", curso=" + (curso != null ? curso.getNombre() : null) +
                 '}';
     }
-    public void eliminar() {
-        this.activo = false;
-    }
+
 }
