@@ -82,6 +82,23 @@ jobs:
           echo "Topicos con JWT HTTP: $code"
           test "$code" = "200" || { cat /tmp/topicos.json; exit 1; }
 
+          code=$(curl -sS -o /tmp/curso.json -w '%{http_code}' \
+            -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" \
+            -X POST http://127.0.0.1:8080/cursos \
+            -d '{"nombre":"Java","categoria":"Backend"}')
+          echo "Crear curso HTTP: $code"
+          test "$code" = "200" || { cat /tmp/curso.json; exit 1; }
+          CURSO_ID=$(jq -r '.id // empty' /tmp/curso.json)
+          USUARIO_ID=$(jq -r '.id // empty' /tmp/registration.json)
+          test -n "$CURSO_ID" && test -n "$USUARIO_ID"
+
+          code=$(curl -sS -o /tmp/topico_creado.json -w '%{http_code}' \
+            -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" \
+            -X POST http://127.0.0.1:8080/topicos \
+            -d "{\"titulo\":\"Primer topico\",\"mensaje\":\"Probando el flujo\",\"idAutor\":$USUARIO_ID,\"idCurso\":$CURSO_ID}")
+          echo "Crear topico HTTP: $code"
+          test "$code" = "200" || { cat /tmp/topico_creado.json; exit 1; }
+
           code=$(curl -sS -o /tmp/invalid.json -w '%{http_code}' \
             -H 'Authorization: Bearer token_invalido' http://127.0.0.1:8080/topicos)
           echo "JWT invalido HTTP: $code"
