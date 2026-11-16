@@ -1,59 +1,128 @@
-# challenge-foro
-<h1>API REST para la gestión de un foro de discusión, desarrollada con Spring Boot.</h1>
+# ForoHub — API REST para un foro
 
-<h2>Descripcion</h2>
-ForoHub es un backend que permite crear, listar, actualizar y eliminar tópicos (temas de discusión), junto con sus autores y cursos asociados. La aplicación implementa autenticación JWT para la seguridad y utiliza PostgreSQL como base de datos.
+ForoHub es uno de los proyectos que desarrollé durante mi formación en Java Backend con Oracle Next Education / Alura. La idea fue construir la parte del servidor de un foro: registrar tópicos, consultarlos, actualizarlos y eliminarlos, incorporando autenticación con JWT.
 
-<h2>Tecnologías</h2>
-Java 17+
+Me sirvió especialmente para empezar a trabajar con Spring Security, separar los datos de entrada y salida usando DTOs y conectar una API REST con una base de datos relacional.
 
-Spring Boot 3
+## ¿Qué permite hacer?
 
-Spring Data JPA (Hibernate)
+- Crear, listar, consultar, modificar y eliminar tópicos.
+- Relacionar cada tópico con un usuario (autor) y un curso.
+- Listar tópicos con paginación.
+- Iniciar sesión y obtener un token JWT para acceder a rutas protegidas.
+- Registrar usuarios mediante un endpoint protegido, guardando sus contraseñas con BCrypt.
 
-Spring Security con JWT
+## Tecnologías utilizadas
 
-PostgreSQL
+- **Java 17**
+- **Spring Boot 3.5.3**
+- **Spring Web**, **Spring Data JPA / Hibernate** y **Spring Security**
+- **JWT** (biblioteca `java-jwt`)
+- **MySQL**
+- **Maven**, **Lombok** y **Flyway**
 
-Maven
+> Nota: el proyecto usa **MySQL**, como se ve en las dependencias de `pom.xml`. Versiones anteriores de este README mencionaban PostgreSQL.
 
-Lombok
+## Endpoints principales
 
-<h2>Funcionalidades principales</h2>
-Crear un nuevo tópico con título, mensaje, autor y curso.
+| Método | Ruta | Acción |
+| --- | --- | --- |
+| `POST` | `/login` | Iniciar sesión y recibir un JWT |
+| `POST` | `/topicos` | Crear un tópico |
+| `GET` | `/topicos` | Listar tópicos con paginación |
+| `GET` | `/topicos/{id}` | Consultar un tópico |
+| `PUT` | `/topicos/{id}` | Actualizar un tópico |
+| `DELETE` | `/topicos/{id}` | Eliminar un tópico |
+| `POST` | `/usuarios` | Registrar usuario (ruta protegida) |
+| `POST` | `/cursos` | Registrar curso (ruta protegida) |
 
-Listar tópicos con paginación.
+### Ejemplo de solicitud de tópico
 
-Obtener detalles de un tópico específico.
+```json
+{
+  "titulo": "Duda sobre Spring Boot",
+  "mensaje": "¿Cómo organizar la capa de servicios?",
+  "idAutor": 1,
+  "idCurso": 1
+}
+```
 
-Actualizar datos de un tópico.
+Para crear ese tópico deben existir previamente el usuario y el curso con esos identificadores.
 
-Eliminar un tópico (borrado físico).
+### Autenticación
 
-Autenticación mediante tokens JWT para asegurar endpoints.
+El inicio de sesión se realiza enviando una solicitud `POST /login`:
 
-<h2>Endpoints principales</h2>
-Método	URI	Descripción
-POST	/topicos	Crear un nuevo tópico
-GET	/topicos	Listar tópicos paginados
-GET	/topicos/{id}	Obtener detalle de un tópico
-PUT	/topicos/{id}	Actualizar un tópico existente
-DELETE	/topicos/{id}	Eliminar un tópico
+```json
+{
+  "login": "usuario@ejemplo.com",
+  "contrasena": "tu_contrasena"
+}
+```
 
-<h3>Uso</h3>
-Clonar el repositorio
+Con un usuario válido, la API devuelve un JWT. Para las rutas protegidas se utiliza la cabecera:
 
-bash
-Copiar
-Editar
-git clone https://github.com/tuUsuario/ForoHub.git
-cd ForoHub
-Configurar base de datos en application.properties o application.yml.
+```http
+Authorization: Bearer TU_TOKEN
+```
 
-<h3>Ejecutar la aplicación</h3>
+**Limitación actual:** en `SecurityConfiguration` solo `POST /login` tiene acceso público. El endpoint `POST /usuarios` también exige autenticación. Esto significa que, en una instalación nueva, **todavía falta resolver la creación inicial de un usuario** antes de poder iniciar sesión usando solamente la API. No se presenta este flujo como listo para usar sin esa preparación.
 
-bash
-Copiar
-Editar
+## Estructura del proyecto
+
+- `controller/`: endpoints HTTP.
+- `DTO/`: datos que recibe y devuelve la API.
+- `service/`: servicios del proyecto.
+- `Repositorio/`: acceso a datos mediante Spring Data JPA.
+- `model/`: entidades del dominio.
+- `infra/security/`: autenticación, configuración y validación de JWT.
+- `infra/exception/`: excepciones y respuestas de error.
+- `src/main/resources/db/migration/`: archivos SQL de migración incluidos en el repositorio.
+
+## Cómo ejecutarlo localmente
+
+### Requisitos
+
+- JDK 17
+- MySQL
+- Git
+- Una terminal. El repositorio incluye Maven Wrapper.
+
+1. Clonar el repositorio:
+
+```bash
+git clone https://github.com/johanMnu/challenge-foro.git
+cd challenge-foro
+```
+
+2. Crear una base de datos MySQL (por defecto se usa `forohub`):
+
+```sql
+CREATE DATABASE forohub;
+```
+
+3. Definir la contraseña de tu propia base de datos con `DB_PASSWORD`. También podés ajustar `DB_USERNAME` y `DB_URL` si tu configuración es diferente.
+
+**PowerShell (Windows):**
+
+```powershell
+$env:DB_PASSWORD = "tu_contrasena_local"
+./mvnw.cmd spring-boot:run
+```
+
+**Bash (Linux/macOS):**
+
+```bash
+export DB_PASSWORD="tu_contrasena_local"
 ./mvnw spring-boot:run
-Acceder a los endpoints usando Postman o cualquier cliente HTTP, enviando el token JWT en el header Authorization: Bearer <token> para las rutas protegidas.
+```
+
+No compartas tu contraseña real en archivos versionados. La clave del token JWT también debe configurarse con un valor privado según `application.properties`.
+
+> La configuración y las migraciones deben verificarse en un entorno local antes de considerar la instalación reproducible. Además, falta definir un mecanismo seguro para crear el primer usuario sin depender de una cuenta ya autenticada.
+
+## Qué me aportó este proyecto
+
+Pude practicar operaciones CRUD, paginación, relaciones entre entidades y protección de rutas. La parte de autenticación fue especialmente útil para entender cómo intervienen Spring Security, el filtro JWT y el servicio que genera y verifica tokens.
+
+El proyecto todavía tiene puntos para mejorar. Por ejemplo, completar el flujo de registro inicial, revisar las migraciones y ampliar las pruebas automatizadas. Prefiero dejar esas mejoras identificadas antes que presentar el sistema como terminado.
