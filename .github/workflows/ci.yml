@@ -36,3 +36,53 @@ jobs:
         run: |
           chmod +x ./mvnw
           ./mvnw --batch-mode test
+      - name: Probar registro, login y acceso autenticado por HTTP
+        env:
+          DB_URL: jdbc:mysql://127.0.0.1:3306/forohub
+          DB_USERNAME: root
+          DB_PASSWORD: test_password
+        run: |
+          chmod +x ./mvnw
+          ./mvnw --batch-mode -DskipTests spring-boot:run > /tmp/forohub-start.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+
+          READY=0
+          for i in $(seq 1 60); do
+            if curl -sS --max-time 2 -o /dev/null http://127.0.0.1:8080/login; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            tail -n 160 /tmp/forohub-start.log
+            exit 1
+          fi
+
+          code=$(curl -sS -o /tmp/registration.json -w '%{http_code}' \
+            -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/usuarios \
+            -d '{"nombre":"Test CI","correoElectronico":"ci@example.com","contrasena":"test_password_123"}')
+          echo "Registro HTTP: $code"
+          test "$code" = "200" || { cat /tmp/registration.json; exit 1; }
+
+          code=$(curl -sS -o /tmp/login.json -w '%{http_code}' \
+            -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/login \
+            -d '{"login":"ci@example.com","contrasena":"test_password_123"}')
+          echo "Login HTTP: $code"
+          test "$code" = "200" || { cat /tmp/login.json; exit 1; }
+          TOKEN=$(jq -r '.tokenJWT // .token // empty' /tmp/login.json)
+          test -n "$TOKEN" || { echo "No se devolvio JWT"; exit 1; }
+
+          code=$(curl -sS -o /tmp/topicos.json -w '%{http_code}' \
+            -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/topicos)
+          echo "Topicos con JWT HTTP: $code"
+          test "$code" = "200" || { cat /tmp/topicos.json; exit 1; }
+
+          code=$(curl -sS -o /tmp/invalid.json -w '%{http_code}' \
+            -H 'Authorization: Bearer token_invalido' http://127.0.0.1:8080/topicos)
+          echo "JWT invalido HTTP: $code"
+          test "$code" = "401" || { cat /tmp/invalid.json; exit 1; }
