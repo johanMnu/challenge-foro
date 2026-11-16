@@ -10,7 +10,7 @@ Me sirvió especialmente para empezar a trabajar con Spring Security, separar lo
 - Relacionar cada tópico con un usuario (autor) y un curso.
 - Listar tópicos con paginación.
 - Iniciar sesión y obtener un token JWT para acceder a rutas protegidas.
-- Registrar usuarios mediante un endpoint protegido, guardando sus contraseñas con BCrypt.
+- Registrar usuarios sin token para poder crear la primera cuenta, guardando sus contraseñas con BCrypt.
 
 ## Tecnologías utilizadas
 
@@ -33,7 +33,7 @@ Me sirvió especialmente para empezar a trabajar con Spring Security, separar lo
 | `GET` | `/topicos/{id}` | Consultar un tópico |
 | `PUT` | `/topicos/{id}` | Actualizar un tópico |
 | `DELETE` | `/topicos/{id}` | Eliminar un tópico |
-| `POST` | `/usuarios` | Registrar usuario (ruta protegida) |
+| `POST` | `/usuarios` | Registrar usuario (ruta pública) |
 | `POST` | `/cursos` | Registrar curso (ruta protegida) |
 
 ### Ejemplo de solicitud de tópico
@@ -60,13 +60,23 @@ El inicio de sesión se realiza enviando una solicitud `POST /login`:
 }
 ```
 
-Con un usuario válido, la API devuelve un JWT. Para las rutas protegidas se utiliza la cabecera:
+Antes del login, registrá un usuario mediante `POST /usuarios` con un cuerpo como este:
+
+```json
+{
+  "nombre": "Ana",
+  "correoElectronico": "ana@ejemplo.com",
+  "contrasena": "una_contrasena_de_prueba"
+}
+```
+
+Después podés iniciar sesión con ese correo electrónico como `login` y la contraseña usada en el registro. Con un usuario válido, la API devuelve un JWT. Para las rutas protegidas se utiliza la cabecera:
 
 ```http
 Authorization: Bearer TU_TOKEN
 ```
 
-**Limitación actual:** en `SecurityConfiguration` solo `POST /login` tiene acceso público. El endpoint `POST /usuarios` también exige autenticación. Esto significa que, en una instalación nueva, **todavía falta resolver la creación inicial de un usuario** antes de poder iniciar sesión usando solamente la API. No se presenta este flujo como listo para usar sin esa preparación.
+Ahora `POST /usuarios` y `POST /login` son públicos para permitir el primer registro. El resto de las rutas requiere JWT. En una aplicación pública habría que sumar controles de abuso y políticas de registro.
 
 ## Estructura del proyecto
 
@@ -119,10 +129,10 @@ export DB_PASSWORD="tu_contrasena_local"
 
 No compartas tu contraseña real en archivos versionados. La clave del token JWT también debe configurarse con un valor privado según `application.properties`.
 
-> La configuración y las migraciones deben verificarse en un entorno local antes de considerar la instalación reproducible. Además, falta definir un mecanismo seguro para crear el primer usuario sin depender de una cuenta ya autenticada.
+> Las migraciones Flyway ahora tienen nombres válidos y el proyecto cuenta con una prueba de arranque mediante GitHub Actions y MySQL. Si ya tenías una base de datos creada previamente, revisá el historial de migraciones antes de aplicar los cambios: no se debe modificar una base con datos sin respaldo.
 
 ## Qué me aportó este proyecto
 
 Pude practicar operaciones CRUD, paginación, relaciones entre entidades y protección de rutas. La parte de autenticación fue especialmente útil para entender cómo intervienen Spring Security, el filtro JWT y el servicio que genera y verifica tokens.
 
-El proyecto todavía tiene puntos para mejorar. Por ejemplo, completar el flujo de registro inicial, revisar las migraciones y ampliar las pruebas automatizadas. Prefiero dejar esas mejoras identificadas antes que presentar el sistema como terminado.
+El proyecto todavía tiene puntos para mejorar, como validar mejor los datos de registro, agregar pruebas de los endpoints y reforzar el tratamiento de errores. Prefiero dejar esas mejoras identificadas antes que presentar el sistema como terminado.
