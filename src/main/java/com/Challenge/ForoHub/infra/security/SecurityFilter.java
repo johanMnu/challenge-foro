@@ -32,12 +32,16 @@ public class SecurityFilter extends OncePerRequestFilter {
                 subject = tokenService.getSubject(tokenJWT);
             } catch (RuntimeException ex) {
                 SecurityContextHolder.clearContext();
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalido o expirado");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write("Token invalido o expirado");
                 return;
             }
             var usuario = repository.findByLogin(subject);
             if (usuario.isEmpty()) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario del token no encontrado");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write("Usuario del token no encontrado");
                 return;
             }
             var autenticacion = new UsernamePasswordAuthenticationToken(
